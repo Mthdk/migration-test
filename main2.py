@@ -6,7 +6,7 @@ from tkinter import filedialog
 from tkinter import messagebox
 from tqdm import tqdm
 
-DESTINATION_FOLDER = 'destino'  # Pasta de destino para os arquivos movidos
+DESTINATION_FOLDER = 'destino'  # Pasta de destino para os arquivos copiados
 LOG_FILE = 'log.txt'  # Arquivo de log para registrar origem e destino
 
 class App:
@@ -34,13 +34,6 @@ class App:
         self.file_path_entry.delete(0, END)
         self.file_path_entry.insert(0, file_path)
 
-    def move_files(self, files, destination_folder):
-        os.makedirs(destination_folder, exist_ok=True)
-        for file in tqdm(files, desc='Moving files', unit='file'):
-            new_path = os.path.join(destination_folder, os.path.basename(file))
-            os.rename(file, new_path)
-            self.log_move(file, new_path)
-
     def copy_files(self):
         file_path = self.file_path_entry.get()
         if not file_path:
@@ -50,10 +43,14 @@ class App:
         df = pd.read_csv(file_path) if file_path.endswith('.csv') else pd.read_excel(file_path)
         files_to_copy = df.iloc[:, 2].tolist()  # Assumes the third column contains the paths
 
-        self.move_files(files_to_copy, DESTINATION_FOLDER)
+        for file in tqdm(files_to_copy, desc='Copying files', unit='file'):
+            new_path = os.path.join(DESTINATION_FOLDER, os.path.basename(file))
+            shutil.copy(file, new_path)
+            self.log_copy(file, new_path)
+
         messagebox.showinfo("Concluído", "Cópia concluída com sucesso.")
 
-    def log_move(self, source, destination):
+    def log_copy(self, source, destination):
         with open(LOG_FILE, 'a') as log:
             log.write(f'Source: {source}\tDestination: {destination}\n')
 
