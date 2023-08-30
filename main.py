@@ -7,13 +7,16 @@ from tkinter import filedialog
 from tkinter import messagebox
 from tqdm import tqdm
 
+DB_URL = 'sqlite:///database.db'  # Modifique para o seu banco de dados
+DESTINATION_FOLDER = 'destino'  # Pasta de destino para os arquivos movidos
+
 class App:
     def __init__(self, root):
         self.root = root
         self.root.title("Aplicação de Gerenciamento de Arquivos e Banco de Dados")
 
         self.db_engine = create_engine(DB_URL)
-        self.file_path_column = 'path'  # Coluna que contém os caminhos no arquivo
+        self.file_path_column = 2  # Índice da terceira coluna
 
         self.file_label = Label(root, text="Selecione o arquivo:")
         self.file_label.pack()
@@ -32,9 +35,13 @@ class App:
         self.file_path_entry.delete(0, END)
         self.file_path_entry.insert(0, file_path)
 
-    def insert_data_to_db(self, file_path):
+    def insert_data_to_db(self, file_path, path_column_index):
         df = pd.read_csv(file_path) if file_path.endswith('.csv') else pd.read_excel(file_path)
-        df.to_sql('data', self.db_engine, if_exists='append', index=False)
+        if path_column_index < len(df.columns):
+            paths = df.iloc[:, path_column_index].tolist()
+            with self.db_engine.connect() as connection:
+                for path in paths:
+                    connection.execute("INSERT INTO data (filename, path) VALUES (?, ?)", (os.path.basename(path), path))
 
     def move_files(self, files, destination_folder):
         os.makedirs(destination_folder, exist_ok=True)
@@ -52,7 +59,7 @@ class App:
             result = connection.execute(f'SELECT DISTINCT {self.file_path_column} FROM data')
             files_to_move = [row[0] for row in result]
 
-        self.insert_data_to_db(file_path)
+        self.insert_data_to_db(file_path, self.file_path_column)
         self.move_files(files_to_move, DESTINATION_FOLDER)
         messagebox.showinfo("Concluído", "Processamento concluído com sucesso.")
 
