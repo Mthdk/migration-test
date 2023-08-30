@@ -39,9 +39,10 @@ class App:
         df = pd.read_csv(file_path) if file_path.endswith('.csv') else pd.read_excel(file_path)
         if path_column_index < len(df.columns):
             paths = df.iloc[:, path_column_index].tolist()
-            with self.db_engine.connect() as connection:
-                for path in paths:
-                    connection.execute("INSERT INTO data (filename, path) VALUES (?, ?)", (os.path.basename(path), path))
+            connection = self.db_engine.connect()
+            for path in paths:
+                connection.execute("INSERT INTO data (filename, path) VALUES (?, ?)", (os.path.basename(path), path))
+            connection.close()
 
     def move_files(self, files, destination_folder):
         os.makedirs(destination_folder, exist_ok=True)
