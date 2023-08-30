@@ -1,4 +1,6 @@
 import os
+import shutil
+import pandas as pd
 from tkinter import *
 from tkinter import filedialog
 from tkinter import messagebox
@@ -24,6 +26,9 @@ class App:
         self.process_button = Button(root, text="Processar", command=self.process_files)
         self.process_button.pack()
 
+        self.copy_button = Button(root, text="Copiar", command=self.copy_files)
+        self.copy_button.pack()
+
     def browse_file(self):
         file_path = filedialog.askopenfilename(filetypes=[("CSV e XLSX files", "*.csv *.xlsx")])
         self.file_path_entry.delete(0, END)
@@ -36,6 +41,18 @@ class App:
             os.rename(file, new_path)
             self.log_move(file, new_path)
 
+    def copy_files(self):
+        file_path = self.file_path_entry.get()
+        if not file_path:
+            messagebox.showerror("Erro", "Selecione um arquivo.")
+            return
+
+        df = pd.read_csv(file_path) if file_path.endswith('.csv') else pd.read_excel(file_path)
+        files_to_copy = df.iloc[:, 2].tolist()  # Assumes the third column contains the paths
+
+        self.move_files(files_to_copy, DESTINATION_FOLDER)
+        messagebox.showinfo("Concluído", "Cópia concluída com sucesso.")
+
     def log_move(self, source, destination):
         with open(LOG_FILE, 'a') as log:
             log.write(f'Source: {source}\tDestination: {destination}\n')
@@ -47,7 +64,7 @@ class App:
             return
 
         df = pd.read_csv(file_path) if file_path.endswith('.csv') else pd.read_excel(file_path)
-        files_to_move = df.iloc[:, 2].tolist()  # Assume que a terceira coluna contém os caminhos
+        files_to_move = df.iloc[:, 2].tolist()  # Assumes the third column contains the paths
 
         self.move_files(files_to_move, DESTINATION_FOLDER)
         messagebox.showinfo("Concluído", "Processamento concluído com sucesso.")
